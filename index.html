@@ -1,434 +1,225 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TextSwap AI</title>
   <style>
-    @font-face {
-      font-family: 'MinecraftRegular';
-      src: url('Minecraft-Regular.otf') format('opentype');
-    }
-    @font-face {
-      font-family: 'MinecraftTen';
-      src: url('Minecraft-Ten.ttf') format('truetype');
+    @font-face { font-family:'MinecraftTen';     src:url('Minecraft-Ten.ttf') format('truetype'); }
+    @font-face { font-family:'MinecraftRegular'; src:url('Minecraft-Regular.otf') format('opentype'); }
+
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    a{text-decoration:none!important;color:inherit;}
+    html{caret-color:#3C8527;}
+
+    :root{
+      --bg:#48494A; --surface:#D0D1D4; --card:#48494A; --dark:#313233;
+      --border:#1E1E1F; --hi:#5A5B5C;
+      --green:#3C8527; --green-h:#2A641C; --green-dk:#1D4D13; --green-lt:#4F913Cbf;
+      --purple:#7345E5; --purp-dk:#4A1CAC; --purp-lt:#A264F2bf;
+      --white:#fff; --black:#000; --muted:#999;
+      --fh:'MinecraftTen','Courier New',monospace;
+      --fb:'MinecraftRegular','Courier New',monospace;
+
+      /* ⚠️ GANTI INI dengan URL Worker kamu setelah deploy */
+      /* Contoh: https://textswap-worker.namakamu.workers.dev */
+      --worker-url: 'https://env.secret5.workers.dev';
     }
 
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    a { text-decoration: none; color: inherit; }
+    body{ font-family:var(--fb); background:var(--bg); color:var(--white); min-height:100vh; line-height:1.5; }
 
-    :root {
-      /* Light Minecraft palette — like the reference */
-      --bg:        #48494A;   /* body background — medium grey */
-      --surface:   #D0D1D4;   /* nav, card bg — light grey */
-      --raised:    #313233;   /* input bg — dark inset */
-      --card:      #48494A;   /* card body */
-      --border:    #1E1E1F;   /* black border */
-      --border-hi: #5A5B5C;   /* lighter border */
-
-      --green:     #3C8527;
-      --green-h:   #4fa832;
-      --green-dk:  #1D4D13;
-      --green-lt:  #4F913C;
-
-      --purple:    #7345E5;
-      --purple-dk: #4A1CAC;
-      --purple-lt: #A264F2;
-
-      --text-light: #ffffff;
-      --text-dark:  #000000;
-      --text-grey:  #313233;
-      --muted:      #888;
+    /* NAV */
+    nav{
+      background:var(--surface); border-bottom:3px solid var(--border);
+      height:52px; padding:0 28px;
+      display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:200;
     }
+    .nav-logo{ font-family:var(--fh); font-size:.9rem; color:var(--black); text-shadow:3px 3px 0 rgba(0,0,0,.3); }
+    .nav-logo em{ font-style:normal; color:var(--green); }
+    .nav-links{ display:flex; gap:24px; }
+    .nav-links a{ font-family:var(--fh); font-size:.62rem; color:var(--black); text-shadow:2px 2px 0 rgba(0,0,0,.25); transition:color .15s; }
+    .nav-links a:hover{ color:var(--green); }
 
-    html { font-size: 16px; caret-color: var(--green); }
+    /* PAGE */
+    .page{ max-width:900px; margin:0 auto; padding:32px 20px 72px; }
 
-    body {
-      font-family: 'MinecraftRegular', monospace;
-      background: var(--bg);
-      color: var(--text-light);
-      min-height: 100vh;
-      line-height: 1.6;
+    /* HEADINGS */
+    h1{ font-family:var(--fh); font-size:clamp(1.3rem,3.5vw,2rem); text-shadow:4px 4px 0 rgba(0,0,0,.5); line-height:1.25; margin-bottom:12px; }
+    h1 em{ font-style:normal; color:var(--green); text-shadow:4px 4px 0 rgba(0,0,0,.5); }
+    h2{ font-family:var(--fh); font-size:.95rem; text-shadow:3px 3px 0 rgba(0,0,0,.4); margin-bottom:10px; margin-top:22px; }
+    p{ font-size:.82rem; color:var(--muted); margin-bottom:10px; }
+    hr{ border:0; border-top:2.5px solid #333334; border-bottom:2.5px solid #5A5B5C; margin:14px 0; }
+
+    /* CARD */
+    .card{
+      background:var(--card); border:3px solid var(--border);
+      box-shadow:inset 1.5px 1.5px 0 rgba(255,255,255,.07),inset -1.5px -1.5px 0 rgba(0,0,0,.4);
+      padding:16px; margin-bottom:14px;
     }
 
-    /* ── NAV (light, like reference) ── */
-    nav {
-      background: var(--surface);
-      border-bottom: 3px solid var(--border);
-      padding: 13px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+    /* FORM */
+    .form-group{ margin-bottom:12px; }
+    .form-label{ display:block; font-size:.78rem; color:#ccc; margin-bottom:5px; }
+    .form-input{
+      font-family:var(--fb); font-size:.82rem; color:var(--white);
+      background:#313233; border:3px solid #1E1E1F;
+      box-shadow:inset 0 6px 0 #242425;
+      width:100%; padding:8px 12px; height:40px;
+      transition:box-shadow .2s;
     }
-    .logo {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 1.05rem;
-      color: var(--text-dark);
-      /* Minecraft-style shadow: gelap di bawah-kanan, bukan highlight putih */
-      text-shadow: 3px 3px 0 rgba(0,0,0,0.35);
-      letter-spacing: 1px;
-      image-rendering: pixelated;
-    }
-    .logo em { font-style: normal; color: var(--green); text-shadow: 3px 3px 0 rgba(0,0,0,0.35); }
+    .form-input:focus{ outline:none; box-shadow:inset 0 6px 0 #242425, 0 0 0 2px var(--green); }
+    .form-input::placeholder{ color:#555; }
 
-    .nav-links {
-      display: flex; gap: 24px;
-    }
-    .nav-links a {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.72rem;
-      color: var(--text-dark);
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
-      letter-spacing: 0.5px;
-      transition: color .15s;
-    }
-    .nav-links a:hover { color: var(--green); }
+    /* BUTTONS */
+    .btn{ cursor:pointer; border:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; user-select:none; }
 
-    /* ── PAGE ── */
-    .page { max-width: 860px; margin: 0 auto; padding: 32px 20px 72px; }
+    .btn-primary{
+      font-family:var(--fh); font-size:.75rem; letter-spacing:1.5px;
+      color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.4);
+      background:var(--green); border:3px solid var(--border);
+      box-shadow:inset 0 -6px 0 var(--green-dk),inset 3px 3px 0 var(--green-lt),inset -3px -9px 0 rgba(99,157,82,.5);
+      padding:7px 18px 15px; transition:filter .15s,transform .1s;
+    }
+    .btn-primary:hover:not(:disabled){ filter:brightness(1.12); }
+    .btn-primary:active:not(:disabled){ transform:translateY(2px); box-shadow:inset 0 0 0 var(--green-dk),inset 3px 3px 0 var(--green-lt),inset -3px -3px 0 rgba(99,157,82,.5); }
+    .btn-primary:disabled{ opacity:.4; cursor:not-allowed; }
+    .btn-primary.full{ width:100%; }
 
-    /* ── HERO ── */
-    .hero { margin-bottom: 28px; }
-    .hero h1 {
-      font-family: 'MinecraftTen', monospace;
-      font-size: clamp(1.5rem, 4vw, 2.2rem);
-      color: var(--text-light);
-      /* Minecraft pixel shadow — solid offset, no blur */
-      text-shadow:
-        4px 4px 0 rgba(0,0,0,0.5),
-        5px 5px 0 rgba(0,0,0,0.2);
-      margin-bottom: 14px;
-      line-height: 1.25;
+    .btn-secondary{
+      font-family:var(--fb); font-size:.75rem;
+      color:#fff; background:var(--purple); border:3px solid var(--border);
+      box-shadow:inset 0 -6px 0 var(--purp-dk),inset 3px 3px 0 var(--purp-lt),inset -3px -9px 0 rgba(142,73,235,.5);
+      padding:7px 18px 15px; transition:filter .15s,transform .1s;
     }
-    .hero h1 em { font-style: normal; color: var(--green); text-shadow: 4px 4px 0 rgba(0,0,0,0.5); }
+    .btn-secondary:hover{ filter:brightness(1.1); }
+    .btn-secondary:active{ transform:translateY(2px); }
 
-    /* Button row under heading — like reference */
-    .hero-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .btn-normal{
+      font-family:var(--fb); font-size:.72rem; color:#4C4C4C;
+      background:#C6C6C6; border:1.5px solid #131313;
+      box-shadow:inset 1.5px 1.5px 0 rgba(247,247,247,.75),inset -1.5px -1.5px 0 #656465;
+      padding:5px 12px; transition:0s;
+    }
+    .btn-normal:hover{ color:#fff; background:#218306; border-color:#fff; box-shadow:inset 1.5px 1.5px 0 rgba(23,205,7,.75),inset -1.5px -1.5px 0 #004E00; }
 
-    .hero p {
-      font-size: 0.85rem;
-      color: var(--text-light);
-      max-width: 600px;
-    }
+    /* TWO COL */
+    .r2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:560px){ .r2{ grid-template-columns:1fr; } }
 
-    /* ── STEPS ── */
-    .steps {
-      display: flex; align-items: center; gap: 0;
-      margin-bottom: 24px; flex-wrap: wrap;
-    }
-    .step {
-      display: flex; align-items: center; gap: 6px;
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.68rem; color: #888;
-      transition: color .2s;
-    }
-    .step.active { color: var(--green); }
-    .step.done   { color: var(--surface); }
-    .step-n {
-      width: 22px; height: 22px;
-      border: 2px solid currentColor;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.62rem; flex-shrink: 0;
-      transition: background .2s;
-    }
-    .step.active .step-n { background: var(--green); color: #fff; border-color: var(--green); }
-    .step.done .step-n   { background: #666; border-color: #666; color: #fff; }
-    .dash { width: 24px; height: 2px; background: #666; flex-shrink: 0; }
+    /* STEPS */
+    .steps{ display:flex; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:0; }
+    .step{ display:flex; align-items:center; gap:6px; font-family:var(--fh); font-size:.58rem; color:#666; transition:color .2s; }
+    .step.active{ color:var(--green); }
+    .step.done{ color:#aaa; }
+    .step-n{ width:22px; height:22px; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:.55rem; flex-shrink:0; }
+    .step.active .step-n{ background:var(--green); color:#fff; border-color:var(--green); }
+    .step.done .step-n{ background:#555; color:#fff; border-color:#555; }
+    .dash{ width:22px; height:2px; background:#555; flex-shrink:0; }
 
-    /* ── SECTION HEADING (like "HEADING" in reference) ── */
-    .sec-heading {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 1.1rem;
-      color: var(--text-light);
-      text-shadow: 3px 3px 0 rgba(0,0,0,0.4), 4px 4px 0 rgba(0,0,0,0.15);
-      margin-bottom: 10px;
-      margin-top: 24px;
+    /* DROP ZONE */
+    .dropzone{
+      border:3px dashed #666; background:#313233;
+      padding:30px 16px; text-align:center; cursor:pointer;
+      position:relative; transition:border-color .2s,background .2s;
     }
+    .dropzone:hover,.dropzone.over{ border-color:var(--green); background:rgba(60,133,39,.07); }
+    .dropzone input{ position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .dropzone .ico{ font-size:1.8rem; display:block; margin-bottom:8px; }
+    .dropzone strong{ font-family:var(--fh); font-size:.72rem; display:block; margin-bottom:4px; }
+    .dropzone span{ font-size:.68rem; color:var(--muted); }
 
-    /* ── CARD / PANEL ── */
-    .card {
-      background: var(--card);
-      border: 3px solid var(--border);
-      box-shadow:
-        inset 1.5px 1.5px 0 rgba(255,255,255,0.08),
-        inset -1.5px -1.5px 0 rgba(0,0,0,0.4);
-      margin-bottom: 14px;
-      padding: 16px;
-    }
+    /* PREVIEW */
+    #pw{ display:none; }
+    #pi{ width:100%; display:block; max-height:280px; object-fit:contain; background:#111; }
+    .pbar{ display:flex; justify-content:flex-end; padding:7px 0 0; }
 
-    /* ── HR (authentic Minecraft divider) ── */
-    hr {
-      border: 0;
-      border-top: 2.5px solid #333334;
-      border-bottom: 2.5px solid #5A5B5C;
-      margin: 14px 0;
+    /* STATUS */
+    .status{
+      font-size:.76rem; color:var(--muted);
+      background:#313233; border:3px solid #1E1E1F;
+      box-shadow:inset 0 5px 0 #242425;
+      padding:9px 13px; min-height:42px; line-height:1.8;
     }
+    .status .ok{ color:#4fa832; }
+    .status .warn{ color:#ffc107; }
 
-    /* ── FORM LABEL ── */
-    .form-label {
-      display: block;
-      font-size: 0.82rem;
-      color: var(--text-light);
-      margin-bottom: 5px;
+    /* TAGS */
+    .tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+    .tag{
+      font-size:.7rem; background:#313233; border:2px solid #555;
+      color:var(--muted); padding:2px 10px; cursor:pointer;
+      transition:border-color .15s,color .15s,transform .1s;
     }
+    .tag:hover{ border-color:var(--green); color:var(--green); transform:translateY(-1px); }
 
-    /* ── FORM INPUT (like Image 1 — dark inset) ── */
-    .form-input {
-      font-family: 'MinecraftRegular', monospace;
-      font-size: 0.85rem;
-      color: var(--text-light);
-      background-color: var(--raised);
-      border: 3px solid var(--border);
-      box-shadow: inset 0px 6px 0 #242425;
-      width: 100%;
-      padding: 8px 12px;
-      height: 42px;
-      transition: box-shadow .2s;
-    }
-    .form-input:focus {
-      outline: none;
-      box-shadow: inset 0px 6px 0 #242425, 0 0 0 2px var(--green);
-    }
-    .form-input::placeholder { color: #555; }
+    /* PROGRESS */
+    .progress-wrap{ margin-top:12px; display:none; }
+    .progress-bar{ height:10px; background:#313233; border:2px solid var(--border); box-shadow:inset 0 3px 0 #242425; }
+    .progress-fill{ height:100%; width:0%; background:var(--green); box-shadow:inset 0 -3px 0 var(--green-dk); transition:width .4s ease; }
+    .progress-txt{ font-size:.7rem; color:var(--muted); margin-top:6px; text-align:center; }
 
-    .form-group { margin-bottom: 12px; }
+    /* RESULT */
+    #result-section{ display:none; }
+    .result-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px){ .result-grid{ grid-template-columns:1fr; } }
+    .result-img{ width:100%; display:block; background:#111; border:3px solid var(--border); }
+    .result-label{ font-family:var(--fh); font-size:.65rem; color:var(--muted); margin-bottom:6px; text-shadow:2px 2px 0 rgba(0,0,0,.4); }
+    .result-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 
-    /* ── BUTTONS ── */
+    /* NOTICE */
+    .notice{ border-left:3px solid var(--green); background:rgba(60,133,39,.08); padding:9px 14px; font-size:.72rem; color:var(--muted); line-height:1.7; margin-top:13px; }
+    .notice b{ color:#D0D1D4; font-family:var(--fh); }
 
-    /* Primary — green (like "SUBMIT" in reference) */
-    .btn-primary {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.78rem;
-      cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      letter-spacing: 1px;
-      user-select: none;
-      color: #fff;
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
-      background-color: var(--green);
-      border: 3px solid var(--border);
-      box-shadow:
-        inset 0px -6px 0px var(--green-dk),
-        inset 3px 3px 0 rgba(79,145,60,0.75),
-        inset -3px -9px 0 rgba(99,157,82,0.5);
-      padding: 8px 18px 16px;
-      transition: filter .15s, transform .1s;
+    /* WORKER SETUP BOX */
+    .setup-box{
+      background:#313233; border:3px solid var(--border);
+      box-shadow:inset 0 5px 0 #242425;
+      padding:14px; margin-bottom:14px;
+      font-size:.76rem; line-height:1.9; color:#ccc;
     }
-    .btn-primary:hover:not(:disabled) { filter: brightness(1.12); }
-    .btn-primary:active:not(:disabled) {
-      transform: translateY(2px);
-      box-shadow:
-        inset 0px 0px 0px var(--green-dk),
-        inset 3px 3px 0 rgba(79,145,60,0.75),
-        inset -3px -3px 0 rgba(99,157,82,0.5);
+    .setup-box code{
+      background:rgba(0,0,0,.4); padding:1px 6px;
+      font-family:'Courier New',monospace; font-size:.78rem; color:#4fa832;
     }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary.full { width: 100%; }
+    .setup-box b{ color:var(--white); font-family:var(--fh); font-size:.7rem; }
 
-    /* Secondary — purple (like "Back To..." in reference) */
-    .btn-secondary {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.78rem;
-      cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      letter-spacing: 1px;
-      user-select: none;
-      color: #fff;
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
-      background-color: var(--purple);
-      border: 3px solid var(--border);
-      box-shadow:
-        inset 0px -6px 0px var(--purple-dk),
-        inset 3px 3px 0 rgba(162,100,242,0.75),
-        inset -3px -9px 0 rgba(142,73,235,0.5);
-      padding: 8px 18px 16px;
-      transition: filter .15s, transform .1s;
-    }
-    .btn-secondary:hover { filter: brightness(1.1); }
-    .btn-secondary:active {
-      transform: translateY(2px);
-      box-shadow:
-        inset 0px 0px 0px var(--purple-dk),
-        inset 3px 3px 0 rgba(162,100,242,0.75),
-        inset -3px -3px 0 rgba(142,73,235,0.5);
-    }
+    /* SPINNER */
+    .spin{ display:inline-block; width:11px; height:11px; border:2px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:rot .5s linear infinite; }
+    @keyframes rot{ to{ transform:rotate(360deg); } }
+    .ldots::after{ content:''; display:inline-block; animation:ld 1.2s steps(4,end) infinite; }
+    @keyframes ld{ 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
 
-    /* Normal — grey (like "Submit" small button in Image 1) */
-    .btn-normal {
-      font-family: 'MinecraftRegular', monospace;
-      font-size: 0.75rem;
-      cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      user-select: none;
-      color: #4C4C4C;
-      background-color: #C6C6C6;
-      border: 1.5px solid #131313;
-      box-shadow:
-        inset 1.5px 1.5px 0 rgba(247,247,247,0.75),
-        inset -1.5px -1.5px 0 #656465;
-      padding: 5px 13px;
-      transition: background .1s, color .1s, box-shadow .1s, transform .1s;
+    /* TOAST */
+    #toast{
+      position:fixed; bottom:20px; right:20px;
+      background:var(--surface); border:3px solid var(--border);
+      box-shadow:3px 3px 0 rgba(0,0,0,.5);
+      padding:9px 16px; font-size:.74rem; color:var(--black);
+      opacity:0; pointer-events:none;
+      transform:translateY(6px); transition:opacity .2s,transform .2s; z-index:999;
     }
-    .btn-normal:hover {
-      background-color: #218306;
-      border-color: #fff;
-      color: #fff;
-      box-shadow:
-        inset 1.5px 1.5px 0 rgba(23,205,7,0.75),
-        inset -1.5px -1.5px 0 #004E00;
-    }
-    .btn-normal:active { transform: translateY(1px); }
+    #toast.show{ opacity:1; pointer-events:auto; transform:translateY(0); }
 
-    /* ── TWO COL ── */
-    .r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media(max-width:560px){ .r2 { grid-template-columns: 1fr; } }
-
-    /* ── UPLOAD DROP ZONE ── */
-    .drop-zone {
-      border: 3px dashed #666;
-      background: var(--raised);
-      padding: 32px 16px;
-      text-align: center;
-      cursor: pointer;
-      position: relative;
-      transition: border-color .2s, background .2s;
-    }
-    .drop-zone:hover, .drop-zone.over {
-      border-color: var(--green);
-      background: rgba(60,133,39,0.08);
-    }
-    .drop-zone input {
-      position: absolute; inset: 0;
-      opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
-    .drop-zone .ico { font-size: 2rem; display: block; margin-bottom: 9px; }
-    .drop-zone strong {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.85rem; color: var(--text-light);
-      display: block; margin-bottom: 4px;
-    }
-    .drop-zone span { font-size: 0.72rem; color: var(--muted); }
-
-    /* ── PREVIEW ── */
-    #pw { display: none; }
-    #pi { width: 100%; display: block; max-height: 260px; object-fit: contain; background: #111; }
-    .pbar { display: flex; justify-content: flex-end; padding: 7px 0 0; }
-
-    /* ── DETECT OUTPUT ── */
-    .dout {
-      font-size: 0.78rem;
-      color: var(--muted);
-      background: var(--raised);
-      border: 3px solid var(--border);
-      box-shadow: inset 0 5px 0 #242425;
-      padding: 9px 13px;
-      min-height: 42px; line-height: 1.8;
-    }
-    .dout .ok   { color: #4fa832; }
-    .dout .warn { color: #ffc107; }
-
-    /* ── TAGS ── */
-    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-    .tag {
-      font-size: 0.7rem;
-      background: #313233;
-      border: 2px solid #555;
-      color: #aaa;
-      padding: 2px 10px; cursor: pointer;
-      transition: border-color .15s, color .15s, transform .1s;
-    }
-    .tag:hover { border-color: var(--green); color: var(--green); transform: translateY(-1px); }
-
-    /* ── RESULT ── */
-    #rb { display: none; }
-    .rcontent {
-      background: var(--raised);
-      border: 3px solid var(--border);
-      box-shadow: inset 0 5px 0 #242425;
-      padding: 13px 15px;
-      font-size: 0.78rem; line-height: 1.9; color: #ccc;
-    }
-    .rcontent h3 {
-      font-family: 'MinecraftTen', monospace;
-      font-size: 0.78rem; color: var(--green);
-      margin: 11px 0 3px;
-    }
-    .rcontent strong { color: #fff; }
-    .ractions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
-
-    /* ── NOTICE ── */
-    .notice {
-      border-left: 3px solid var(--green);
-      background: rgba(60,133,39,0.08);
-      padding: 9px 13px;
-      font-size: 0.72rem; color: #aaa;
-      line-height: 1.7; margin-top: 13px;
-    }
-    .notice b { color: #D0D1D4; font-family: 'MinecraftTen', monospace; }
-
-    /* ── SPINNER / LOADING ── */
-    .spin {
-      display: inline-block; width: 11px; height: 11px;
-      border: 2px solid rgba(255,255,255,.2); border-top-color: #fff;
-      border-radius: 50%;
-      animation: rot .5s linear infinite;
-    }
-    @keyframes rot { to { transform: rotate(360deg); } }
-    .ldots::after {
-      content: ''; display: inline-block;
-      animation: ld 1.2s steps(4,end) infinite;
-    }
-    @keyframes ld { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
-
-    /* ── TOAST ── */
-    #toast {
-      position: fixed; bottom: 20px; right: 20px;
-      background: var(--surface);
-      border: 3px solid var(--border);
-      box-shadow: 3px 3px 0 rgba(0,0,0,.5);
-      padding: 9px 16px;
-      font-size: 0.74rem; color: var(--text-dark);
-      opacity: 0; pointer-events: none;
-      transform: translateY(6px);
-      transition: opacity .2s, transform .2s;
-      z-index: 999;
-    }
-    #toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-
-    /* ── FOOTER ── */
-    footer {
-      text-align: center; color: #888;
-      font-size: 0.68rem; padding: 22px 20px;
-      border-top: 2px solid #333;
-    }
-    footer a { color: var(--green); transition: color .2s; }
-    footer a:hover { color: var(--green-h); }
+    footer{ text-align:center; color:#666; font-size:.66rem; padding:22px 20px; border-top:2px solid var(--border); }
+    footer a{ color:var(--green); }
   </style>
 </head>
 <body>
 
-<!-- NAV — light like reference Image 2 -->
 <nav>
-  <div class="logo">Text<em>Swap</em> AI</div>
+  <div class="nav-logo">Text<em>Swap</em> AI</div>
   <div class="nav-links">
     <a href="#">HOME</a>
-    <a href="#">TENTANG</a>
+    <a href="https://fal.ai" target="_blank">FAL.AI</a>
     <a href="https://developer.puter.com" target="_blank">PUTER</a>
   </div>
 </nav>
 
 <div class="page">
 
-  <!-- HERO -->
-  <div class="hero">
-    <h1>EDIT TEKS DI FOTO<br/>PAKAI <em>AI</em></h1>
-    <div class="hero-btns">
-      <button class="btn-primary" onclick="document.getElementById('fi').click()">Upload Foto</button>
-      <button class="btn-secondary" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">Cara Kerja</button>
-    </div>
-    <p>Upload foto, biarkan AI mendeteksi teks, lalu dapatkan instruksi edit yang detail. Gratis tanpa batas.</p>
-  </div>
+  <h1>EDIT TEKS DI FOTO<br/>PAKAI <em>AI BENERAN</em></h1>
+  <p>Gemini deteksi teks → Fal.ai Flux inpainting edit gambarnya langsung. Gratis pakai kredit Fal.ai.</p>
 
   <!-- STEPS -->
   <div class="steps">
@@ -442,67 +233,70 @@
   </div>
 
   <!-- UPLOAD -->
-  <div class="sec-heading">UPLOAD FOTO</div>
+  <h2>[ 1 ] UPLOAD FOTO</h2>
   <div class="card">
-    <div class="drop-zone" id="dz">
-      <input type="file" id="fi" accept="image/*" />
+    <div class="dropzone" id="dz">
+      <input type="file" id="fi" accept="image/*"/>
       <span class="ico">🖼</span>
       <strong>Klik atau drag foto ke sini</strong>
       <span>JPG · PNG · WEBP · Maks 10MB</span>
     </div>
-
     <div id="pw">
-      <img id="pi" src="" alt="Preview" />
-      <div class="pbar">
-        <button class="btn-normal" id="rb2">↩ Ganti Foto</button>
-      </div>
+      <img id="pi" src="" alt="Preview"/>
+      <div class="pbar"><button class="btn btn-normal" id="rb2">↩ Ganti Foto</button></div>
     </div>
-
-    <hr />
-
-    <div class="form-label" style="margin-bottom:6px;">Hasil Deteksi AI:</div>
-    <div class="dout" id="dout">Belum ada foto yang diupload...</div>
+    <hr/>
+    <div class="form-label" style="margin-bottom:6px;">Teks terdeteksi oleh Gemini:</div>
+    <div class="status" id="dout">Upload foto dulu...</div>
     <div class="tags" id="tags"></div>
   </div>
 
   <!-- EDIT -->
-  <div class="sec-heading">GANTI TEKS</div>
+  <h2>[ 2 ] GANTI TEKS</h2>
   <div class="card">
     <div class="r2" style="margin-bottom:12px;">
       <div class="form-group">
         <label class="form-label">Teks Asli:</label>
-        <input class="form-input" type="text" id="orig" placeholder="cth: Warung Ayam" />
+        <input class="form-input" type="text" id="orig" placeholder="cth: Warung Ayam"/>
       </div>
       <div class="form-group">
         <label class="form-label">Teks Baru:</label>
-        <input class="form-input" type="text" id="newt" placeholder="cth: Warung Mie Ayam" />
+        <input class="form-input" type="text" id="newt" placeholder="cth: Warung Mie Ayam"/>
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Instruksi Tambahan (opsional):</label>
-      <input class="form-input" type="text" id="xtra" placeholder="cth: pertahankan warna font asli" />
-    </div>
-
-    <button class="btn-primary full" id="gbtn" onclick="gen()" disabled>
+    <button class="btn btn-primary full" id="gbtn" onclick="editImage()" disabled>
       <span id="gspin" style="display:none;"><span class="spin"></span></span>
-      <span id="gtxt">Generate Instruksi AI</span>
+      <span id="gtxt">Edit Gambar Pakai AI</span>
     </button>
 
-    <div class="notice" id="how">
-      <b>CARA KERJA —</b> AI menganalisis foto lalu memberi instruksi detail cara edit teks.
-      Gunakan hasilnya di <b>Canva</b>, <b>Photoshop</b>, atau <b>GIMP</b>.
+    <div class="progress-wrap" id="prog-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-txt" id="prog-txt">Memproses...</div>
+    </div>
+
+    <div class="notice">
+      <b>CARA KERJA —</b> Gemini analisis posisi & konteks teks → Fal.ai <b>Flux Inpainting</b> menggambar ulang area teks. Hasilnya realistis karena AI yang ngerjain pixel-nya langsung.
     </div>
   </div>
 
   <!-- RESULT -->
-  <div id="rb">
-    <div class="sec-heading">INSTRUKSI AI</div>
+  <div id="result-section">
+    <h2>[ 3 ] HASIL</h2>
     <div class="card">
-      <div class="rcontent" id="rc"></div>
-      <div class="ractions">
-        <button class="btn-primary" onclick="copy()">Salin Instruksi</button>
-        <a class="btn-secondary" id="dl" href="#" download>Download Foto</a>
+      <div class="result-grid">
+        <div>
+          <div class="result-label">SEBELUM</div>
+          <img class="result-img" id="img-before" src="" alt="Before"/>
+        </div>
+        <div>
+          <div class="result-label">SESUDAH (AI)</div>
+          <img class="result-img" id="img-after" src="" alt="After"/>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-primary" onclick="downloadResult()">⬇ Download Hasil</button>
+        <button class="btn btn-secondary" onclick="editAgain()">🔄 Edit Lagi</button>
       </div>
     </div>
   </div>
@@ -510,88 +304,89 @@
 </div>
 
 <footer>
-  Powered by <a href="https://developer.puter.com" target="_blank">Puter.js</a> · Model: gemini-2.5-flash-lite (Gratis)
+  Powered by <a href="https://developer.puter.com" target="_blank">Puter.js</a> (Gemini Vision) +
+  <a href="https://fal.ai" target="_blank">Fal.ai</a> (Flux Inpainting)
 </footer>
 <div id="toast"></div>
 
+<script src="https://js.puter.com/v2/"></script>
 <script>
-  let url = null;
+  // ⚠️ GANTI dengan URL Worker kamu setelah deploy
+  // Contoh: 'https://textswap-worker.namakamu.workers.dev'
+  const WORKER_URL = 'https://textswap-worker.namakamu.workers.dev';
 
-  // Tunggu puter.js siap lalu trigger login
+  let dataURL  = null;
+  let resultURL = null;
+
+  // Init Puter login
   async function initPuter() {
-    // Tunggu sampai object `puter` tersedia (max 10 detik)
-    let tries = 0;
-    while (typeof puter === 'undefined' && tries < 100) {
-      await new Promise(r => setTimeout(r, 100));
-      tries++;
-    }
-    if (typeof puter === 'undefined') {
-      console.error('Puter.js gagal load');
-      return;
-    }
+    let t = 0;
+    while (typeof puter === 'undefined' && t++ < 100) await new Promise(r => setTimeout(r, 100));
+    if (typeof puter === 'undefined') return;
     try {
-      const isSignedIn = await puter.auth.isSignedIn();
-      if (!isSignedIn) await puter.auth.signIn();
-    } catch(e) { console.warn('Puter auth:', e); }
+      if (!(await puter.auth.isSignedIn())) await puter.auth.signIn();
+    } catch(e) { console.warn('Puter:', e); }
   }
   initPuter();
 
+  // Upload
   const dz = document.getElementById('dz');
   const fi = document.getElementById('fi');
-  const pw = document.getElementById('pw');
-  const pi = document.getElementById('pi');
-
-  fi.addEventListener('change', () => fi.files[0] && load(fi.files[0]));
+  fi.addEventListener('change', () => fi.files[0] && loadFile(fi.files[0]));
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('over');
-    e.dataTransfer.files[0] && load(e.dataTransfer.files[0]);
-  });
-  document.getElementById('rb2').onclick = reset;
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); });
+  document.getElementById('rb2').onclick = resetPhoto;
 
-  function reset() {
-    pw.style.display = 'none'; dz.style.display = 'block';
-    document.getElementById('dout').innerHTML = 'Belum ada foto yang diupload...';
-    document.getElementById('dout').className = 'dout';
+  function resetPhoto() {
+    document.getElementById('pw').style.display = 'none';
+    dz.style.display = 'block';
+    document.getElementById('dout').innerHTML = 'Upload foto dulu...';
     document.getElementById('tags').innerHTML = '';
-    document.getElementById('rb').style.display = 'none';
+    document.getElementById('result-section').style.display = 'none';
     document.getElementById('gbtn').disabled = true;
-    url = null; step(1);
+    setProgress(0, '');
+    dataURL = resultURL = null;
+    step(1);
   }
 
-  async function load(f) {
+  async function loadFile(f) {
     if (!f.type.startsWith('image/')) { toast('File harus berupa gambar!'); return; }
     if (f.size > 10485760) { toast('File terlalu besar (maks 10MB)'); return; }
     const r = new FileReader();
     r.onload = async e => {
-      url = e.target.result;
-      pi.src = url;
-      dz.style.display = 'none'; pw.style.display = 'block';
-      document.getElementById('dl').href = url;
-      document.getElementById('dl').download = f.name;
-      step(2); await detect();
+      dataURL = e.target.result;
+      document.getElementById('pi').src = dataURL;
+      document.getElementById('pw').style.display = 'block';
+      dz.style.display = 'none';
+      document.getElementById('img-before').src = dataURL;
+      step(2);
+      await detectText();
     };
     r.readAsDataURL(f);
   }
 
-  async function detect() {
+  // Detect text via Gemini (Puter.js)
+  async function detectText() {
     const el = document.getElementById('dout');
-    el.className = 'dout';
-    el.innerHTML = '<span class="ldots">AI membaca teks</span>';
+    el.className = 'status';
+    el.innerHTML = '<span class="ldots">Gemini membaca teks di foto</span>';
+    document.getElementById('gbtn').disabled = true;
     try {
-      const b64 = url.split(',')[1];
-      const mime = url.split(';')[0].split(':')[1];
-      const res = await puter.ai.chat([{ role: 'user', content: [
-        { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
-        { type: 'text', text: 'Temukan semua teks dalam foto. Balas HANYA JSON:\n{"texts":["teks1"],"desc":"deskripsi 1 kalimat"}\nJika tidak ada teks, texts=[].' }
-      ]}], { model: 'gemini-2.5-flash-lite' });
+      const b64  = dataURL.split(',')[1];
+      const mime = dataURL.split(';')[0].split(':')[1];
+      const res  = await puter.ai.chat([{
+        role:'user', content:[
+          { type:'image_url', image_url:{ url:`data:${mime};base64,${b64}` } },
+          { type:'text', text:'Temukan semua teks dalam foto. Balas HANYA JSON:\n{"texts":["teks1","teks2"],"desc":"deskripsi foto 1 kalimat"}\nJika tidak ada teks, texts=[].' }
+        ]
+      }], { model:'gemini-2.5-flash-lite' });
 
       const raw = res?.message?.content || '';
       const m = raw.match(/\{[\s\S]*\}/);
       if (!m) throw 0;
       const { texts = [], desc = '' } = JSON.parse(m[0]);
-      el.innerHTML = `<span class="ok">✔ ${texts.length} teks ditemukan</span>  ${desc}`;
+      el.innerHTML = `<span class="ok">✔ ${texts.length} teks ditemukan</span>  <span style="color:#888">${desc}</span>`;
 
       const te = document.getElementById('tags');
       te.innerHTML = '';
@@ -601,64 +396,138 @@
         s.onclick = () => { document.getElementById('orig').value = t; document.getElementById('newt').focus(); };
         te.appendChild(s);
       });
-      document.getElementById('gbtn').disabled = false; step(3);
+      document.getElementById('gbtn').disabled = false;
+      step(3);
     } catch {
-      el.innerHTML = '<span class="warn">⚠ Deteksi gagal — isi teks manual di bawah.</span>';
-      document.getElementById('gbtn').disabled = false; step(3);
+      document.getElementById('dout').innerHTML = '<span class="warn">⚠ Deteksi gagal — isi teks manual.</span>';
+      document.getElementById('gbtn').disabled = false;
+      step(3);
     }
   }
 
-  async function gen() {
+  // Edit image — call Worker (bukan langsung ke Fal.ai)
+  async function editImage() {
+    if (!dataURL) { toast('Upload foto dulu!'); return; }
     const orig = document.getElementById('orig').value.trim();
     const newt = document.getElementById('newt').value.trim();
-    const xtra = document.getElementById('xtra').value.trim();
-    if (!url)  { toast('Upload foto dulu!'); return; }
-    if (!orig) { toast('Masukkan teks asli yang mau diganti'); return; }
-    if (!newt) { toast('Masukkan teks pengganti'); return; }
+    if (!orig) { toast('Masukkan teks asli'); return; }
+    if (!newt) { toast('Masukkan teks baru'); return; }
 
     const btn = document.getElementById('gbtn');
     btn.disabled = true;
     document.getElementById('gspin').style.display = 'inline-block';
-    document.getElementById('gtxt').innerHTML = '<span class="ldots">AI sedang berpikir</span>';
+    document.getElementById('gtxt').innerHTML = '<span class="ldots">AI sedang ngedit</span>';
+    setProgress(15, 'Gemini analisis konteks teks...');
 
     try {
-      const b64 = url.split(',')[1];
-      const mime = url.split(';')[0].split(':')[1];
-      const res = await puter.ai.chat([{ role: 'user', content: [
-        { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
-        { type: 'text', text: `Kamu asisten desain grafis. Analisis foto dan beri instruksi DETAIL cara mengganti teks "${orig}" menjadi "${newt}".\n\nSertakan:\n1. LOKASI - posisi teks di foto\n2. WARNA TEKS - warna asli (hex jika bisa)\n3. FONT - perkiraan jenis & ukuran\n4. BACKGROUND - warna/pola di balik teks\n5. LANGKAH EDIT - cara hapus & tulis ulang (Canva/Photoshop/GIMP)\n6. TIPS - agar hasil natural${xtra ? '\n\nInstruksi tambahan: ' + xtra : ''}\n\nGunakan Bahasa Indonesia. Format pakai nomor & heading jelas.` }
-      ]}], { model: 'gemini-2.5-flash-lite' });
+      // Step A: Gemini buat inpaint prompt
+      const b64  = dataURL.split(',')[1];
+      const mime = dataURL.split(';')[0].split(':')[1];
 
-      const result = res?.message?.content || 'Tidak ada respons.';
-      document.getElementById('rc').innerHTML = md(result);
-      document.getElementById('rb').style.display = 'block';
-      document.getElementById('rb').scrollIntoView({ behavior: 'smooth' });
-      step(4); toast('Instruksi berhasil dibuat!');
-    } catch (e) {
-      console.error(e); toast('Gagal generate, coba lagi.');
+      const analysisRes = await puter.ai.chat([{
+        role:'user', content:[
+          { type:'image_url', image_url:{ url:`data:${mime};base64,${b64}` } },
+          { type:'text', text:`Saya ingin mengganti teks "${orig}" menjadi "${newt}" dalam foto ini.
+Buat prompt inpainting dalam Bahasa Inggris untuk Flux AI.
+Balas HANYA JSON:
+{
+  "prompt": "detailed inpainting prompt in English describing: the exact background material/texture/color where the old text was, then the new text '${newt}' rendered in the exact same font style, color, size, and visual treatment as the original text '${orig}'. Be very specific.",
+  "strength": 0.7
+}` }
+        ]
+      }], { model:'gemini-2.5-flash-lite' });
+
+      let prompt   = `Replace text "${orig}" with "${newt}". Match the exact same font style, color, size. Restore background texture perfectly.`;
+      let strength = 0.7;
+
+      const rawA = analysisRes?.message?.content || '';
+      const mA   = rawA.match(/\{[\s\S]*\}/);
+      if (mA) {
+        try {
+          const p = JSON.parse(mA[0]);
+          if (p.prompt)   prompt   = p.prompt;
+          if (p.strength) strength = p.strength;
+        } catch(e) {}
+      }
+
+      setProgress(40, 'Mengirim ke Worker...');
+
+      // Step B: Kirim ke Cloudflare Worker (bukan langsung ke Fal.ai)
+      const workerRes = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_url: dataURL,   // Worker forward base64 ke Fal.ai
+          prompt,
+          strength,
+        })
+      });
+
+      setProgress(75, 'Fal.ai Flux sedang ngedit gambar...');
+
+      if (!workerRes.ok) {
+        const err = await workerRes.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `Worker error ${workerRes.status}`);
+      }
+
+      const data = await workerRes.json();
+      const imgUrl = data?.images?.[0]?.url || data?.image?.url;
+      if (!imgUrl) throw new Error('Tidak ada hasil dari Fal.ai');
+
+      setProgress(100, 'Selesai!');
+
+      resultURL = imgUrl;
+      document.getElementById('img-after').src = imgUrl;
+      document.getElementById('result-section').style.display = 'block';
+      document.getElementById('result-section').scrollIntoView({ behavior:'smooth' });
+      step(4);
+      toast('Gambar berhasil diedit!');
+
+    } catch(e) {
+      console.error(e);
+      const msg = e.message?.includes('Worker') ? `Worker belum di-deploy atau URL salah.\nCek: ${WORKER_URL}` : e.message || 'Gagal edit gambar.';
+      toast(msg);
+      setProgress(0, '');
+      document.getElementById('prog-wrap').style.display = 'none';
     } finally {
       btn.disabled = false;
       document.getElementById('gspin').style.display = 'none';
-      document.getElementById('gtxt').textContent = 'Generate Instruksi AI';
+      document.getElementById('gtxt').textContent = 'Edit Gambar Pakai AI';
     }
   }
 
-  function md(t) {
-    return t
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^#{1,3} (.+)$/gm, '<h3>$1</h3>')
-      .replace(/\n/g, '<br>');
+  async function downloadResult() {
+    if (!resultURL) return;
+    try {
+      const blob = await fetch(resultURL).then(r => r.blob());
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'textswap-result.jpg';
+      a.click(); URL.revokeObjectURL(url);
+    } catch { window.open(resultURL, '_blank'); }
   }
 
-  function copy() {
-    navigator.clipboard.writeText(document.getElementById('rc').innerText)
-      .then(() => toast('Instruksi disalin!'));
+  function editAgain() {
+    document.getElementById('result-section').style.display = 'none';
+    document.getElementById('orig').value = '';
+    document.getElementById('newt').value = '';
+    setProgress(0, '');
+    document.getElementById('prog-wrap').style.display = 'none';
+    step(1);
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  function setProgress(pct, txt) {
+    const w = document.getElementById('prog-wrap');
+    w.style.display = pct > 0 ? 'block' : 'none';
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-txt').textContent = txt;
   }
 
   function step(n) {
-    for (let i = 1; i <= 4; i++) {
-      const e = document.getElementById('s' + i);
-      e.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    for (let i=1;i<=4;i++) {
+      const e = document.getElementById('s'+i);
+      e.className = 'step'+(i<n?' done':i===n?' active':'');
     }
   }
 
@@ -667,9 +536,8 @@
     clearTimeout(_t);
     const e = document.getElementById('toast');
     e.textContent = msg; e.classList.add('show');
-    _t = setTimeout(() => e.classList.remove('show'), 2600);
+    _t = setTimeout(() => e.classList.remove('show'), 3500);
   }
 </script>
-<script src="https://js.puter.com/v2/"></script>
 </body>
 </html>
