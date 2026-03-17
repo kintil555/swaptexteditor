@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TextSwap AI</title>
-  <script src="https://js.puter.com/v2/"></script>
   <style>
     @font-face {
       font-family: 'MinecraftRegular';
@@ -518,6 +517,25 @@
 <script>
   let url = null;
 
+  // Tunggu puter.js siap lalu trigger login
+  async function initPuter() {
+    // Tunggu sampai object `puter` tersedia (max 10 detik)
+    let tries = 0;
+    while (typeof puter === 'undefined' && tries < 100) {
+      await new Promise(r => setTimeout(r, 100));
+      tries++;
+    }
+    if (typeof puter === 'undefined') {
+      console.error('Puter.js gagal load');
+      return;
+    }
+    try {
+      const isSignedIn = await puter.auth.isSignedIn();
+      if (!isSignedIn) await puter.auth.signIn();
+    } catch(e) { console.warn('Puter auth:', e); }
+  }
+  initPuter();
+
   const dz = document.getElementById('dz');
   const fi = document.getElementById('fi');
   const pw = document.getElementById('pw');
@@ -652,5 +670,6 @@
     _t = setTimeout(() => e.classList.remove('show'), 2600);
   }
 </script>
+<script src="https://js.puter.com/v2/"></script>
 </body>
 </html>
